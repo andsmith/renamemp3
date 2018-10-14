@@ -31,6 +31,7 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
     # strip out bad chars
     song_clean = "".join([a for a in song if ((a >= 'A' and a <= 'Z') or (a >= 'a' and a <= 'z') or (a == ' ') or (a >= '0' and a <= '9'))])
     song_clean = re.sub(' *$', '', song_clean)
+    artist_name, song_clean = artist_name.lstrip().rstrip(), song_clean.lstrip().rstrip()
     artist_name, song_clean = special_cases(artist_name, full_artist, song_clean)
     out_file = "%s - %s.mp3" % (artist_name, song_clean)
     if not quiet:
