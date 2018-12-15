@@ -6,14 +6,18 @@ import re
 
 def special_cases(artist, full_artist, song):
 
-    if full_artist == 'Marc Maron':
+    if full_artist in ['Marc Maron']:
         return "WTF", song
     return artist, song
 
 
 def get_new_filename(old_filename, do_full_artist=False, quiet=True):
     m = mp3_tagger.MP3File(old_filename)
-    tags = m.get_tags()
+    try:
+        tags = m.get_tags()
+    except:
+        print "Get tags failed for file:  %s" % (old_filename, )
+        return None
 
     if 'artist' not in tags['ID3TagV2'] and 'song' not in tags['ID3TagV2']:
         if not quiet:
@@ -21,7 +25,11 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         return None
 
     full_artist = tags['ID3TagV2']['artist'].encode('utf-8') if 'artist' in tags['ID3TagV2'] else "No Artist"
-    song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] else "No Song"
+    full_artist = full_artist.rstrip().lstrip()
+    full_artist = full_artist.rstrip("\x00").lstrip("\x00")
+    song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] else None
+    if song is None:
+        return None
     track = tags['ID3TagV1']['track']  # not sure what to do with this...
     if do_full_artist:
         artist_name = full_artist
