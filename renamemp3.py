@@ -12,6 +12,7 @@ def special_cases(artist, full_artist, song):
 
 
 def get_new_filename(old_filename, do_full_artist=False, quiet=True):
+
     m = mp3_tagger.MP3File(old_filename)
     try:
         tags = m.get_tags()
@@ -23,9 +24,9 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         if not quiet:
             print "\t%s          (no tags found, not renaming)" % (old_filename.ljust(50), )
         return None
-    if 'artist' in tags['ID3TagV2']:
+    if 'artist' in tags['ID3TagV2'] and tags['ID3TagV2']['artist'] is not None:
         full_creator = tags['ID3TagV2']['artist'].encode('utf-8')
-    elif 'album' in tags['ID3TagV2']:
+    elif 'album' in tags['ID3TagV2'] and tags['ID3TagV2']['album'] is not None:
         full_creator = tags['ID3TagV2']['album'].encode('utf-8')
     else:
         full_creator = "No Artist"
@@ -62,7 +63,7 @@ if __name__ == "__main__":
             sys.exit()
 
     files = [f for f in os.listdir('.') if f.lower().endswith('mp3')]
-    matching = [f for f in files if f.endswith('mp3')]  # re.match("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*\.mp3", f)]
+    matching = files  # re.match("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*\.mp3", f)]
     renames = []
 
     print "\nScanning...\n"
