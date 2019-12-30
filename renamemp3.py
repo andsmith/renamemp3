@@ -47,6 +47,10 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
     artist_name, song_clean = artist_name.lstrip().rstrip(), song_clean.lstrip().rstrip()
     artist_name, song_clean = special_cases(artist_name, full_creator, song_clean)
     out_file = "%s - %s.mp3" % (artist_name, song_clean)
+
+    # remove double spaces
+    out_file = re.sub(' +',' ',out_file)
+
     if not quiet:
         print "\t%s %s %s" % (old_filename.ljust(50), ("%s" % (track, )).ljust(8), out_file)
     return out_file
