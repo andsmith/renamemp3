@@ -32,7 +32,7 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         full_creator = "No Artist"
     full_creator = full_creator.rstrip().lstrip()
     full_creator = full_creator.rstrip("\x00").lstrip("\x00")
-    song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] else None
+    song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] and  tags['ID3TagV2']['song'] is not None  else None
     if song is None:
         return None
     track = tags['ID3TagV1']['track']  # not sure what to do with this...
@@ -42,6 +42,7 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         # use artist's initials, keep case
         artist_name = "".join([a for i, a in enumerate(full_creator) if (i == 0 or full_creator[i - 1] == ' ')])
     # strip out bad chars
+
     song_clean = "".join([a for a in song if ((a >= 'A' and a <= 'Z') or (a >= 'a' and a <= 'z') or (a == ' ') or (a >= '0' and a <= '9'))])
     song_clean = re.sub(' *$', '', song_clean)
     artist_name, song_clean = artist_name.lstrip().rstrip(), song_clean.lstrip().rstrip()
