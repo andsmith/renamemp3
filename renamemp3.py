@@ -2,27 +2,41 @@ import mp3_tagger
 import os
 import sys
 import re
+import argparse
 
 
 def special_cases(artist, full_artist, song):
 
     if full_artist in ['Marc Maron']:
         return "WTF", song
+
+    elif full_artist in ['Behind the Bastards']:
+        header_searchers = [re.compile("^[Pp]art [Oo]ne (.*)$"),
+                            re.compile("^[Pp]art [Tt]wo (.*)$"),
+                            re.compile("^[Pp]art [Tt]hree (.*)$"),
+                            re.compile("^[Pp]art [Ff]our (.*)$"),
+                            re.compile("^[Pp]art [Ff]ive (.*)$"),
+                            re.compile("^[Pp]art [Ss]ix (.*)$")]
+        for part_no, header_searcher in enumerate(header_searchers):
+            song_title_parts = header_searcher.search(song)
+            if song_title_parts is not None:
+                song_title = song_title_parts.groups()[0]
+                return "BtB", "%s - part %i" % (song_title, part_no + 1)
+            
     return artist, song
 
 
 def get_new_filename(old_filename, do_full_artist=False, quiet=True):
-
     m = mp3_tagger.MP3File(old_filename)
     try:
         tags = m.get_tags()
     except:
-        print "Get tags failed for file:  %s" % (old_filename, )
+        print("Get tags failed for file:  %s" % (old_filename,))
         return None
 
     if 'artist' not in tags['ID3TagV2'] and 'song' not in tags['ID3TagV2']:
         if not quiet:
-            print "\t%s          (no tags found, not renaming)" % (old_filename.ljust(50), )
+            print("\t%s          (no tags found, not renaming)" % (old_filename.ljust(50),))
         return None
     if 'artist' in tags['ID3TagV2'] and tags['ID3TagV2']['artist'] is not None:
         full_creator = tags['ID3TagV2']['artist'].encode('utf-8')
@@ -32,7 +46,8 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         full_creator = "No Artist"
     full_creator = full_creator.rstrip().lstrip()
     full_creator = full_creator.rstrip("\x00").lstrip("\x00")
-    song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] and  tags['ID3TagV2']['song'] is not None  else None
+    song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] and tags['ID3TagV2'][
+        'song'] is not None else None
     if song is None:
         return None
     track = tags['ID3TagV1']['track']  # not sure what to do with this...
@@ -43,44 +58,50 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         artist_name = "".join([a for i, a in enumerate(full_creator) if (i == 0 or full_creator[i - 1] == ' ')])
     # strip out bad chars
 
-    song_clean = "".join([a for a in song if ((a >= 'A' and a <= 'Z') or (a >= 'a' and a <= 'z') or (a == ' ') or (a >= '0' and a <= '9'))])
+    song_clean = "".join([a for a in song if ((a >= 'A' and a <= 'Z') or
+                                              (a >= 'a' and a <= 'z') or
+                                              (a == ' ') or
+                                              (a >= '0' and a <= '9'))])
     song_clean = re.sub(' *$', '', song_clean)
     artist_name, song_clean = artist_name.lstrip().rstrip(), song_clean.lstrip().rstrip()
     artist_name, song_clean = special_cases(artist_name, full_creator, song_clean)
     out_file = "%s - %s.mp3" % (artist_name, song_clean)
 
     # remove double spaces
-    out_file = re.sub(' +',' ',out_file)
+    out_file = re.sub(' +', ' ', out_file)
 
     if not quiet:
-        print "\t%s %s %s" % (old_filename.ljust(50), ("%s" % (track, )).ljust(8), out_file)
+        print("\t%s %s %s" % (old_filename.ljust(50), ("%s" % (track,)).ljust(8), out_file))
     return out_file
 
 
-if __name__ == "__main__":
-    do_full = False
-    if len(sys.argv) > 1:
-        if sys.argv[1] in ['-f', '--full_artist']:
-            do_full = True
-        else:
-            print "Unknown command."
-            print "Syntax:  python renamemp3.py [-f|--full-artist]"
-            sys.exit()
+def _do_cmd_args():
+    parser = argparse.ArgumentParser(description='Rename MP3 files based on internal tags.')
+    parser.add_argument('files', type=str, help='File with crime statistics (CSV).', nargs="*")
+    parser.add_argument('--full_artist', '-f', help="Don't abbreviate artist's name in filename prefix.",
+                        action='store_true', default=False)
+    parsed = parser.parse_args()
 
-    files = [f for f in os.listdir('.') if f.lower().endswith('mp3')]
+    return parsed.files, parsed.full_artist
+
+
+if __name__ == "__main__":
+    files, do_full = _do_cmd_args()
+    if files is None or len(files) == 0:
+        files = [f for f in os.listdir('.') if f.lower().endswith('mp3')]
     matching = files  # re.match("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}.*\.mp3", f)]
     renames = []
 
-    print "\nScanning...\n"
-    print "\tMatching MP3 found                                 Track    Rename to"
+    print("\nScanning...\n")
+    print("\tMatching MP3 found                                 Track    Rename to")
     for c in matching:
         out_file = get_new_filename(c, do_full_artist=do_full, quiet=False)
         if out_file is None:
             continue
         cmd = 'mv "%s" "%s"' % (c, out_file)
         renames.append(cmd)
-    print "\nPaste these commands to terminal to rename mp3 files:\n"
+    print("\nPaste these commands to terminal to rename mp3 files:\n")
 
     for c in renames:
-        print c
-    print "\n"
+        print(c)
+    print("\n")
