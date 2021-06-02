@@ -44,13 +44,19 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         full_creator = tags['ID3TagV2']['album'].encode('utf-8')
     else:
         full_creator = "No Artist"
+
     full_creator = full_creator.rstrip().lstrip()
-    full_creator = full_creator.rstrip("\x00").lstrip("\x00")
+    full_creator = full_creator.rstrip("\x00".encode()).lstrip("\x00".encode()).decode()
+    
     song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] and tags['ID3TagV2'][
         'song'] is not None else None
+    
     if song is None:
         return None
+    song = song.decode()
+    
     track = tags['ID3TagV1']['track']  # not sure what to do with this...
+    #import ipdb; ipdb.set_trace()
     if do_full_artist:
         artist_name = full_creator
     else:
