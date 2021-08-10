@@ -27,11 +27,13 @@ def special_cases(artist, full_artist, song):
 
 
 def get_new_filename(old_filename, do_full_artist=False, quiet=True):
+
     m = mp3_tagger.MP3File(old_filename)
     try:
         tags = m.get_tags()
     except:
-        print("Get tags failed for file:  %s" % (old_filename,))
+        if not quiet:
+            print("\t%s          (no tags found, not renaming)" % (old_filename.ljust(50),))
         return None
 
     if 'artist' not in tags['ID3TagV2'] and 'song' not in tags['ID3TagV2']:
@@ -43,10 +45,12 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
     elif 'album' in tags['ID3TagV2'] and tags['ID3TagV2']['album'] is not None:
         full_creator = tags['ID3TagV2']['album'].encode('utf-8')
     else:
-        full_creator = "No Artist"
+        full_creator = None
+    if full_creator is not None:
 
-    full_creator = full_creator.rstrip().lstrip()
-    full_creator = full_creator.rstrip("\x00".encode()).lstrip("\x00".encode()).decode()
+        full_creator = full_creator.rstrip().lstrip().decode()
+    
+        #full_creator = full_creator.rstrip(("\x00".encode())).lstrip(("\x00".encode())).decode()  # necessary?
     
     song = tags['ID3TagV2']['song'].encode('utf-8') if 'song' in tags['ID3TagV2'] and tags['ID3TagV2'][
         'song'] is not None else None
@@ -56,12 +60,17 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
     song = song.decode()
     
     track = tags['ID3TagV1']['track']  # not sure what to do with this...
-    #import ipdb; ipdb.set_trace()
-    if do_full_artist:
-        artist_name = full_creator
+    
+    if full_creator is not None:
+        if do_full_artist:
+            artist_name = full_creator
+        else:
+            # use artist's initials, keep case
+            artist_name = "".join([a for i, a in enumerate(full_creator) if (i == 0 or full_creator[i - 1] == ' ')])
+        artist_name = artist_name.lstrip().rstrip()
     else:
-        # use artist's initials, keep case
-        artist_name = "".join([a for i, a in enumerate(full_creator) if (i == 0 or full_creator[i - 1] == ' ')])
+        artist_name = None
+        
     # strip out bad chars
 
     song_clean = "".join([a for a in song if ((a >= 'A' and a <= 'Z') or
@@ -69,9 +78,23 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
                                               (a == ' ') or
                                               (a >= '0' and a <= '9'))])
     song_clean = re.sub(' *$', '', song_clean)
-    artist_name, song_clean = artist_name.lstrip().rstrip(), song_clean.lstrip().rstrip()
+    song_clean = song_clean.lstrip().rstrip()
+    
     artist_name, song_clean = special_cases(artist_name, full_creator, song_clean)
-    out_file = "%s - %s.mp3" % (artist_name, song_clean)
+
+    if artist_name is not None and song_clean is not None:
+        out_file = "%s - %s.mp3" % (artist_name, song_clean)
+    elif artist_name is not None:
+        print("\t%s          (only artist found, could overwrite other tracks!)" % (old_filename.ljust(50),))
+
+        out_file = "%s.mp3" % (artist_name, )
+    elif artist_name is not None:
+        out_file = "%s.mp3" % (song_clean,)
+    else:
+        if not quiet:
+            print("\t%s          (no artist or song tag, not renaming)" % (old_filename.ljust(50),))
+        return None
+        
 
     # remove double spaces
     out_file = re.sub(' +', ' ', out_file)
