@@ -88,8 +88,8 @@ def get_new_filename(old_filename, do_full_artist=False, quiet=True):
         print("\t%s          (only artist found, could overwrite other tracks!)" % (old_filename.ljust(50),))
 
         out_file = "%s.mp3" % (artist_name, )
-    elif artist_name is not None:
-        out_file = "%s.mp3" % (song_clean,)
+    elif song is not None:
+        out_file = "%s.mp3" % (song,)
     else:
         if not quiet:
             print("\t%s          (no artist or song tag, not renaming)" % (old_filename.ljust(50),))
